@@ -57,11 +57,13 @@
             </form>
         @else
             <a href="{{ route('login') }}" class="nav-link {{ request()->routeIs('login') ? 'active' : '' }}">
-                🔑 Login
+                <img src="{{ asset('icons/login_icon_white.svg') }}" class="tab-icon icon-white" alt="">
+                Login
             </a>
 
             <a href="{{ route('register') }}" class="nav-link {{ request()->routeIs('register') ? 'active' : '' }}">
-                📝 Register
+                <img src="{{ asset('icons/register_icon_white.svg') }}" class="tab-icon icon-white" alt="">
+                Register
             </a>
         @endauth
     </nav>
