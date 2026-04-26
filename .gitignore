@@ -1,0 +1,43 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Laravel
+/vendor/
+/storage/*.key
+/storage/app/private/*
+/storage/app/datasets/*
+/storage/app/models/*
+/storage/app/charts/*
+/storage/app/predictions/*
+/storage/app/results/*
+/bootstrap/cache/*.php
+
+# Node
+/node_modules/
+/public/build/
+/public/hot
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pkl
+*.h5
+*.keras
+*.joblib
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+/python_backend/results/*
+!/python_backend/results/.gitkeep
+
+/python_backend/assets/*
+!/python_backend/assets/.gitkeep
