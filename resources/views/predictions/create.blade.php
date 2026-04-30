@@ -17,7 +17,13 @@
                 <p class="prediction-model-info"><strong>Best Model During Training:</strong> {{ $model->best_model }}</p>
                 <p class="prediction-model-info"><strong>Last Available Dataset Date:</strong> {{ $lastDatasetDate ?? 'N/A' }}</p>
 
-                <form action="{{ route('predictions.generate', $model->id) }}" method="POST">
+                <form 
+                    action="{{ route('predictions.generate', $model->id) }}" 
+                    method="POST"
+                    data-busy
+                    data-busy-title="Generating Prediction..."
+                    data-busy-message="The system is processing the selected trained model and generating the future stock price prediction. Please wait."
+                >
                     @csrf
 
                     <div class="prediction-input-group">
@@ -40,4 +46,54 @@
         </div>
     </section>
 </div>
+
+<div id="busyOverlay" class="busy-overlay">
+    <div class="busy-dialog">
+        <div class="busy-spinner"></div>
+
+        <h2 id="busyTitle" class="busy-title">Processing...</h2>
+
+        <p id="busyMessage" class="busy-message">
+            Please wait while the system processes your request.
+        </p>
+
+        <div class="busy-note">
+            Please do not refresh or close this page.
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function showBusyDialog(title, message) {
+        const overlay = document.getElementById('busyOverlay');
+        const busyTitle = document.getElementById('busyTitle');
+        const busyMessage = document.getElementById('busyMessage');
+
+        if (!overlay || !busyTitle || !busyMessage) {
+            return;
+        }
+
+        busyTitle.textContent = title;
+        busyMessage.textContent = message;
+        overlay.classList.add('active');
+    }
+
+    document.querySelectorAll('form[data-busy]').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            const title = form.dataset.busyTitle || 'Processing...';
+            const message = form.dataset.busyMessage || 'Please wait while the system processes your request.';
+
+            showBusyDialog(title, message);
+
+            const submitButton = form.querySelector('button[type="submit"]');
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Processing...';
+            }
+        });
+    });
+});
+</script>
 @endsection

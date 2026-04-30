@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Dataset;
 use App\Models\TrainedModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 class ModelController extends Controller
@@ -23,11 +24,11 @@ class ModelController extends Controller
         $dataset = Dataset::where('user_id', auth()->id())
             ->findOrFail($datasetId);
 
-        $csvPath = storage_path('app/' . $dataset->file_path);
-
-        if (!file_exists($csvPath)) {
+        if (!Storage::disk('local')->exists($dataset->file_path)) {
             return back()->with('error', 'Dataset file was not found.');
         }
+
+        $csvPath = Storage::disk('local')->path($dataset->file_path);
 
         $pythonExe = base_path('.venv/Scripts/python.exe');
         $pythonScript = base_path('python_backend/train_and_predict.py');
@@ -120,7 +121,7 @@ class ModelController extends Controller
         $model = TrainedModel::where('user_id', auth()->id())
             ->findOrFail($id);
 
-        return view('models.training-result', compact('model'));
+        return view('models.training_result', compact('model'));
     }
 
     public function chart($id)

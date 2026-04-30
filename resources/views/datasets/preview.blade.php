@@ -53,7 +53,13 @@
             @endif
 
             <div class="module-actions">
-                <form action="{{ route('models.train', $dataset->id) }}" method="POST">
+                <form 
+                    action="{{ route('models.train', $dataset->id) }}" 
+                    method="POST"
+                    data-busy
+                    data-busy-title="Training Model..."
+                    data-busy-message="The system is preprocessing the dataset, training the LSTM model, and calculating RMSE values. This may take a few minutes."
+                >
                     @csrf
                     <button type="submit" class="btn">Train Model</button>
                 </form>
@@ -71,4 +77,54 @@
         </div>
     </div>
 </div>
+
+<div id="busyOverlay" class="busy-overlay">
+    <div class="busy-dialog">
+        <div class="busy-spinner"></div>
+
+        <h2 id="busyTitle" class="busy-title">Processing...</h2>
+
+        <p id="busyMessage" class="busy-message">
+            Please wait while the system processes your request.
+        </p>
+
+        <div class="busy-note">
+            Please do not refresh or close this page.
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function showBusyDialog(title, message) {
+        const overlay = document.getElementById('busyOverlay');
+        const busyTitle = document.getElementById('busyTitle');
+        const busyMessage = document.getElementById('busyMessage');
+
+        if (!overlay || !busyTitle || !busyMessage) {
+            return;
+        }
+
+        busyTitle.textContent = title;
+        busyMessage.textContent = message;
+        overlay.classList.add('active');
+    }
+
+    document.querySelectorAll('form[data-busy]').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            const title = form.dataset.busyTitle || 'Processing...';
+            const message = form.dataset.busyMessage || 'Please wait while the system processes your request.';
+
+            showBusyDialog(title, message);
+
+            const submitButton = form.querySelector('button[type="submit"]');
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Processing...';
+            }
+        });
+    });
+});
+</script>
 @endsection

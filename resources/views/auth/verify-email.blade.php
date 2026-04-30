@@ -1,31 +1,120 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-    </div>
+@extends('layouts.guest')
 
-    @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600 dark:text-green-400">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+@section('content')
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="auth-brand">SMPP</div>
+
+        <div class="auth-left-content">
+            <h1>
+                Confirm<br>
+                Your<br>
+                Email
+            </h1>
+
+            <p>
+                Verify your email<br>
+                to continue.
+            </p>
         </div>
-    @endif
-
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
-
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
-            </div>
-        </form>
-
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
-                {{ __('Log Out') }}
-            </button>
-        </form>
     </div>
-</x-guest-layout>
+
+    <div class="auth-right">
+        <div class="auth-card">
+
+            @if (session('status'))
+            <div class="auth-success-box">
+                {{ session('status') }}
+            </div>
+            @endif
+
+            <h2 class="auth-form-title">Confirm Email Address</h2>
+            <br>
+            <p class="auth-description">
+                Thanks for registering. Before continuing, please verify your email address by clicking the verification link sent to your email.
+            </p>
+            <br>
+            
+            @if (session('status'))
+                <div class="auth-success-box">
+                    @if(session('status') == 'verification-link-sent')
+                        A new verification link has been sent to your email address.
+                    @else
+                        {{ session('status') }}
+                    @endif
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('verification.send') }}" id="resendVerificationForm">
+                @csrf
+
+                <button type="submit" class="auth-submit-btn" id="resendVerificationBtn">
+                    Resend Verification Email
+                </button>
+            </form>
+
+            <form method="POST" action="{{ route('logout') }}" style="margin-top: 14px;">
+                @csrf
+
+                <button type="submit" class="auth-secondary-submit-btn">
+                    Cancel
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const resendForm = document.getElementById('resendVerificationForm');
+    const resendBtn = document.getElementById('resendVerificationBtn');
+
+    if (!resendForm || !resendBtn) return;
+
+    const cooldownSeconds = 60;
+    const storageKey = 'verificationResendCooldownEnd';
+
+    function startCooldown(seconds) {
+        const endTime = Date.now() + seconds * 1000;
+        sessionStorage.setItem(storageKey, endTime.toString());
+        runCooldown();
+    }
+
+    function runCooldown() {
+        const endTime = parseInt(sessionStorage.getItem(storageKey), 10);
+
+        if (!endTime || Date.now() >= endTime) {
+            sessionStorage.removeItem(storageKey);
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend Verification Email';
+            resendBtn.classList.remove('auth-btn-disabled');
+            return;
+        }
+
+        resendBtn.disabled = true;
+        resendBtn.classList.add('auth-btn-disabled');
+
+        const timer = setInterval(function () {
+            const remaining = Math.ceil((endTime - Date.now()) / 1000);
+
+            if (remaining <= 0) {
+                clearInterval(timer);
+                sessionStorage.removeItem(storageKey);
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend Verification Email';
+                resendBtn.classList.remove('auth-btn-disabled');
+                return;
+            }
+
+            resendBtn.textContent = 'Resend available in ' + remaining + 's';
+        }, 1000);
+    }
+
+    resendForm.addEventListener('submit', function () {
+        startCooldown(cooldownSeconds);
+    });
+
+    runCooldown();
+});
+</script>
+@endsection

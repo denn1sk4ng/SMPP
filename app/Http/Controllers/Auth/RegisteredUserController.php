@@ -44,14 +44,18 @@ class RegisteredUserController extends Controller
         }
 
         $passwordValidator = Validator::make($request->all(), [
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                            'required',
+                            'confirmed',
+                            Rules\Password::min(8)
+                                ->numbers()
+                                ->symbols(),
+            ],
             'terms_accepted' => ['accepted'],
         ]);
 
         if ($passwordValidator->fails()) {
-            return back()
-                ->withErrors($passwordValidator)
-                ->withInput();
+            return back()->withErrors($passwordValidator)->withInput();
         }
 
         $user = User::create([
@@ -67,7 +71,7 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         session()->flash('welcome_message', 'Hello, ' . ($user->last_name ?? $user->name) . '.');
-        
-        return redirect(route('home', absolute: false));
+
+        return redirect()->route('verification.notice');
     }
 }

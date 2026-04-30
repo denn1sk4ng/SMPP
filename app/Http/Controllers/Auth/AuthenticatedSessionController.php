@@ -30,6 +30,11 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('status', 'Please verify your email address before accessing the system.');
+        }
+
         session()->flash('welcome_message', 'Welcome back, ' . ($user->last_name ?? $user->name) . '.');
 
         return redirect()->intended(route('home', absolute: false));

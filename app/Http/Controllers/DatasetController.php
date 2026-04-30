@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Dataset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -47,9 +48,7 @@ class DatasetController extends Controller
             return back()->with('error', 'Failed to save uploaded file.');
         }
 
-        $fullPath = storage_path('app/' . $path);
-
-        if (!file_exists($fullPath)) {
+        if (!Storage::disk('local')->exists($path)) {
             return back()->with('error', 'File path was generated, but the file was not saved.');
         }
 
@@ -81,7 +80,12 @@ class DatasetController extends Controller
 
         $pythonExe = base_path('.venv/Scripts/python.exe');
         $pythonScript = base_path('python_backend/fetch_dataset.py');
-        $outputDir = storage_path('app/datasets');
+
+        /*
+         | Keep fetched datasets in the same Laravel local disk location
+         | as manual uploads.
+         */
+        $outputDir = Storage::disk('local')->path('datasets');
 
         if (!file_exists($pythonExe)) {
             return back()->with('error', 'Python environment was not found.');
@@ -146,9 +150,8 @@ class DatasetController extends Controller
 
         $safeOutputFileName = basename($output['file_name']);
         $relativePath = 'datasets/' . $safeOutputFileName;
-        $fullPath = storage_path('app/' . $relativePath);
 
-        if (!file_exists($fullPath)) {
+        if (!Storage::disk('local')->exists($relativePath)) {
             return back()->with('error', 'Fetched dataset file was not found.');
         }
 
@@ -170,18 +173,17 @@ class DatasetController extends Controller
         $dataset = Dataset::where('user_id', auth()->id())
             ->findOrFail($id);
 
-        $fullPath = storage_path('app/' . $dataset->file_path);
-
-        if (!file_exists($fullPath)) {
+        if (!Storage::disk('local')->exists($dataset->file_path)) {
             return back()->with('error', 'Dataset file was not found.');
         }
+
+        $fullPath = Storage::disk('local')->path($dataset->file_path);
 
         if (!$this->isSafeDatasetPath($fullPath)) {
             abort(403);
         }
 
         $rows = array_map('str_getcsv', file($fullPath));
-        $rows = array_slice($rows, 0, 101);
 
         return view('datasets.preview', compact('dataset', 'rows'));
     }
@@ -191,11 +193,11 @@ class DatasetController extends Controller
         $dataset = Dataset::where('user_id', auth()->id())
             ->findOrFail($id);
 
-        $fullPath = storage_path('app/' . $dataset->file_path);
-
-        if (!file_exists($fullPath)) {
+        if (!Storage::disk('local')->exists($dataset->file_path)) {
             return back()->with('error', 'Dataset file was not found.');
         }
+
+        $fullPath = Storage::disk('local')->path($dataset->file_path);
 
         if (!$this->isSafeDatasetPath($fullPath)) {
             abort(403);
@@ -207,7 +209,7 @@ class DatasetController extends Controller
     private function isSafeDatasetPath(string $path): bool
     {
         $realPath = realpath($path);
-        $datasetDirectory = realpath(storage_path('app/datasets'));
+        $datasetDirectory = realpath(Storage::disk('local')->path('datasets'));
 
         if (!$realPath || !$datasetDirectory) {
             return false;

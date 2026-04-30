@@ -54,6 +54,13 @@
                     @error('password')
                         <div class="auth-error">{{ $message }}</div>
                     @enderror
+                    @if (Route::has('password.request'))
+                        <div class="forgot-password-row">
+                            <a href="{{ route('password.request') }}">
+                                Forgot password?
+                            </a>
+                        </div>
+                    @endif
                 </div>
 
                 <label class="remember-row">
