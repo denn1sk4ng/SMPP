@@ -29,12 +29,13 @@
                     <div class="prediction-input-group">
                         <label for="future_date" class="prediction-label">Enter Target Future Date</label>
                         <input
-                            type="date"
+                            type="text"
                             name="future_date"
                             id="future_date"
-                            class="prediction-date-input"
+                            value="{{ old('future_date') }}"
+                            class="form-control"
+                            placeholder="Select prediction date"
                             required
-                            min="{{ $lastDatasetDate ? \Carbon\Carbon::parse($lastDatasetDate)->addDay()->format('Y-m-d') : '' }}"
                         >
                     </div>
 
@@ -63,8 +64,37 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Disable Saturday and Sunday in Prediction Date Picker
+    |--------------------------------------------------------------------------
+    */
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("#future_date", {
+            dateFormat: "Y-m-d",
+            disable: [
+                function(date) {
+                    // 0 = Sunday, 6 = Saturday
+                    return date.getDay() === 0 || date.getDay() === 6;
+                }
+            ],
+            locale: {
+                firstDayOfWeek: 1
+            }
+        });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Busy Dialog
+    |--------------------------------------------------------------------------
+    */
     function showBusyDialog(title, message) {
         const overlay = document.getElementById('busyOverlay');
         const busyTitle = document.getElementById('busyTitle');

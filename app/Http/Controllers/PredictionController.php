@@ -41,6 +41,14 @@ class PredictionController extends Controller
             'future_date' => ['required', 'date'],
         ]);
 
+        $futureDate = Carbon::parse($request->future_date);
+
+        if ($futureDate->isWeekend()) {
+            return back()
+                ->withInput()
+                ->with('error', 'Prediction date cannot be Saturday or Sunday. Please select a weekday.');
+        }
+
         $model = TrainedModel::where('user_id', auth()->id())
             ->findOrFail($modelId);
 
@@ -50,10 +58,10 @@ class PredictionController extends Controller
             abort(403);
         }
 
-        $csvPath = storage_path('app/' . $dataset->file_path);
+        $csvPath = $this->resolveDatasetCsvPath($dataset);
 
-        if (!file_exists($csvPath)) {
-            return back()->with('error', 'Dataset file was not found.');
+        if (!$csvPath) {
+            return back()->with('error', 'Dataset file was not found in Laravel storage or Downloads folder.');
         }
 
         $lastDatasetDate = $this->getLastDatasetDate($dataset);
@@ -260,15 +268,38 @@ class PredictionController extends Controller
             ->with('success', 'Prediction deleted successfully.');
     }
 
+    private function resolveDatasetCsvPath($dataset): ?string
+    {
+        if (!$dataset || !$dataset->file_path) {
+            return null;
+        }
+
+        // 1. Normal Laravel storage path
+        $storagePath = storage_path('app/' . $dataset->file_path);
+
+        if (file_exists($storagePath)) {
+            return $storagePath;
+        }
+
+        // 2. Fallback to Downloads folder
+        $downloadsPath = 'C:\\Users\\denni\\Downloads\\' . basename($dataset->file_path);
+
+        if (file_exists($downloadsPath)) {
+            return $downloadsPath;
+        }
+
+        return null;
+    }
+
     private function getLastKnownClose($dataset)
     {
         if (!$dataset) {
             return null;
         }
 
-        $csvPath = storage_path('app/' . $dataset->file_path);
+        $csvPath = $this->resolveDatasetCsvPath($dataset);
 
-        if (!file_exists($csvPath)) {
+        if (!$csvPath) {
             return null;
         }
 
@@ -278,7 +309,9 @@ class PredictionController extends Controller
             return null;
         }
 
-        $header = array_map('trim', $rows[0]);
+        $header = array_map(function ($header) {
+            return trim(str_replace("\xEF\xBB\xBF", '', $header));
+        }, $rows[0]);
 
         $closeIndex = array_search('Close', $header);
 
@@ -307,9 +340,9 @@ class PredictionController extends Controller
             return null;
         }
 
-        $csvPath = storage_path('app/' . $dataset->file_path);
+        $csvPath = $this->resolveDatasetCsvPath($dataset);
 
-        if (!file_exists($csvPath)) {
+        if (!$csvPath) {
             return null;
         }
 
@@ -319,7 +352,10 @@ class PredictionController extends Controller
             return null;
         }
 
-        $header = array_map('trim', $rows[0]);
+        $header = array_map(function ($header) {
+            return trim(str_replace("\xEF\xBB\xBF", '', $header));
+        }, $rows[0]);
+
         $dateIndex = array_search('Date', $header);
 
         if ($dateIndex === false) {
